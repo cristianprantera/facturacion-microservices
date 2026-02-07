@@ -286,5 +286,3 @@ Dentro de contenedores, la URL debe usar `postgres` (no `localhost`):
 **Cristian Prantera**
 Java / Spring Boot — Microservices — Docker — PostgreSQL
 
-```
-```
