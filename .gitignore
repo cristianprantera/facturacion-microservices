@@ -1,0 +1,12 @@
+# secrets / env
+.env
+*.env
+
+# build outputs
+**/target/
+**/.classpath
+**/.project
+**/.settings/
+
+# logs
+*.log

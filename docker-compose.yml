@@ -1,0 +1,190 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/init-multiple-dbs.sql:/docker-entrypoint-initdb.d/init-multiple-dbs.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  eureka-ms:
+    build: ./eureka-ms
+    container_name: eureka-ms
+    ports:
+      - "8761:8761"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  config-ms:
+    build: ./config-ms
+    container_name: config-ms
+    ports:
+      - "8888:8888"
+    environment:
+      CONFIG_REPO_URI: file:/config-repo
+    volumes:
+      - ./config-repo:/config-repo
+    depends_on:
+      eureka-ms:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8888/actuator/health | grep -q UP"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  gateway-ms:
+    build: ./gateway-ms
+    container_name: gateway-ms
+    ports:
+      - "8079:8079"
+    environment:
+      SPRING_CLOUD_CONFIG_URI: http://config-ms:8888
+      SPRING_CLOUD_CONFIG_FAIL_FAST: "false"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-ms:8761/eureka
+    depends_on:
+      config-ms:
+        condition: service_healthy
+      eureka-ms:
+        condition: service_started
+
+  clientes-ms:
+    build: ./clientes-ms
+    container_name: clientes-ms
+    ports:
+      - "8092:8092"
+    environment:
+      SPRING_CLOUD_CONFIG_URI: http://config-ms:8888
+      SPRING_CLOUD_CONFIG_FAIL_FAST: "false"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-ms:8761/eureka
+      BD_URL: jdbc:postgresql://postgres:5432/clientesdb
+      BD_USERNAME: ${POSTGRES_USER}
+      BD_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      config-ms:
+        condition: service_healthy
+      eureka-ms:
+        condition: service_started
+
+  productos-ms:
+    build: ./productos-ms
+    container_name: productos-ms
+    ports:
+      - "8091:8091"
+    environment:
+      SPRING_CLOUD_CONFIG_URI: http://config-ms:8888
+      SPRING_CLOUD_CONFIG_FAIL_FAST: "false"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-ms:8761/eureka
+      BD_URL: jdbc:postgresql://postgres:5432/productosdb
+      BD_USERNAME: ${POSTGRES_USER}
+      BD_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      config-ms:
+        condition: service_healthy
+      eureka-ms:
+        condition: service_started
+
+  empleados-ms:
+    build: ./empleados-ms
+    container_name: empleados-ms
+    ports:
+      - "8093:8093"
+    environment:
+      SPRING_CLOUD_CONFIG_URI: http://config-ms:8888
+      SPRING_CLOUD_CONFIG_FAIL_FAST: "false"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-ms:8761/eureka
+      BD_URL: jdbc:postgresql://postgres:5432/empleadosdb
+      BD_USERNAME: ${POSTGRES_USER}
+      BD_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      config-ms:
+        condition: service_healthy
+      eureka-ms:
+        condition: service_started
+
+  sucursales-ms:
+    build: ./sucursales-ms
+    container_name: sucursales-ms
+    ports:
+      - "8094:8094"
+    environment:
+      SPRING_CLOUD_CONFIG_URI: http://config-ms:8888
+      SPRING_CLOUD_CONFIG_FAIL_FAST: "false"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-ms:8761/eureka
+      BD_URL: jdbc:postgresql://postgres:5432/sucursalesdb
+      BD_USERNAME: ${POSTGRES_USER}
+      BD_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      config-ms:
+        condition: service_healthy
+      eureka-ms:
+        condition: service_started
+
+  facturacion-ms:
+    build: ./facturacion-ms
+    container_name: facturacion-ms
+    ports:
+      - "8096:8096"
+    environment:
+      SPRING_CLOUD_CONFIG_URI: http://config-ms:8888
+      SPRING_CLOUD_CONFIG_FAIL_FAST: "false"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-ms:8761/eureka
+      BD_URL: jdbc:postgresql://postgres:5432/facturaciondb
+      BD_USERNAME: ${POSTGRES_USER}
+      BD_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      config-ms:
+        condition: service_healthy
+      eureka-ms:
+        condition: service_started
+      clientes-ms:
+        condition: service_started
+      productos-ms:
+        condition: service_started
+      empleados-ms:
+        condition: service_started
+      sucursales-ms:
+        condition: service_started
+
+  auth-ms:
+    build: ./auth-ms
+    container_name: auth-ms
+    ports:
+      - "8090:8090"
+    environment:
+      SPRING_CLOUD_CONFIG_URI: http://config-ms:8888
+      SPRING_CLOUD_CONFIG_FAIL_FAST: "false"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-ms:8761/eureka
+      BD_URL: jdbc:postgresql://postgres:5432/authdb
+      BD_USERNAME: ${POSTGRES_USER}
+      BD_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      config-ms:
+        condition: service_healthy
+      eureka-ms:
+        condition: service_started
+
+volumes:
+  pgdata:
