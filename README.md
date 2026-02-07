@@ -1,4 +1,3 @@
-````md
 # Facturación Microservices — Spring Boot + Spring Cloud + PostgreSQL + Docker Compose
 
 Monorepo de un **sistema de facturación en microservicios** construido con **Spring Boot** y **Spring Cloud** (Config Server, Eureka, API Gateway). Utiliza **PostgreSQL 16** como base de datos y se ejecuta localmente con **Docker Compose**.
